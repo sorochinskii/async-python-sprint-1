@@ -1,5 +1,4 @@
 import logging
-import timeit
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import Manager, Pool, cpu_count
 
