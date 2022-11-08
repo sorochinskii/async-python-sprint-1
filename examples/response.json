@@ -76,7 +76,7 @@
     "uv_index": 0,
     "wind_gust": 7.8
   },
-    "forecasts": [
+  "forecasts": [
       {
         "date": "2022-05-18",
         "date_ts": 1652821200,
@@ -89,12 +89,12 @@
         "moon_text": "moon-code-1",
         "hours": [
           {
-            "hour": "0",
-            "hour_ts": 1652821200,
-            "temp": 10,
-            "feels_like": 7,
-            "icon": "ovc",
-            "condition": "overcast",
+          "hour": "0",
+          "hour_ts": 1652821200,
+          "temp": 10,
+          "feels_like": 7,
+          "icon": "ovc",
+          "condition": "overcast",
           "cloudness": 1,
           "prec_type": 0,
           "prec_strength": 0,

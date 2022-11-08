@@ -20,6 +20,11 @@ ERR_MESSAGE_TEMPLATE = "Something wrong. Please contact with mentor."
 MIN_MAJOR_PYTHON_VER = 3
 MIN_MINOR_PYTHON_VER = 9
 
+FILENAME = "aggregation.csv"
+CONDITION = "clear"
+TOP = 19
+BOTTOM = 9
+
 
 def check_python_version():
     import sys
