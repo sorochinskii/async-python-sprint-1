@@ -15,6 +15,7 @@ from models import CalculationResultModel, ForecastsCityModel, ForecastsModel
 from utils import BOTTOM, TOP
 
 logger = logging.getLogger("forecasting")
+# всю настройку логгера было бы неплохо обернуть в функцию
 
 
 class DataFetchingTask:
@@ -31,6 +32,7 @@ class DataCalculationTask:
         super().__init__()
         self.queue = queue
 
+    # TODO рекомендую использовать тайпинги везде
     def run(self, data):
         result = self._calc(data)
         if self.queue:
@@ -38,6 +40,8 @@ class DataCalculationTask:
         else:
             return result
 
+# TODO давай декомпозируем этот метод на более мелкие и специализированные.
+# Такие большие методы очень тяжело поддерживать и читать
     def _calc(self, data: ForecastsCityModel):
         # Датафрейм для итогов по дням.
         forecasts = data.forecasts.dict()
@@ -82,6 +86,12 @@ class DataCalculationTask:
                 raise RuntimeError("daily_averages are empty.")
         except RuntimeError as e:
             logger.exception(e)
+# TODO а в чем смысл рейзить и перехватывать ошибку с логом? с таким же
+# успехом можно было просто писать:
+# if daily_averages.empty:
+#    logger.error("daily_averages are empty.")
+# и здесь по идее надо завершать вычисления, иначе уже в строках
+# ниже упадешь с ошибкой
 
         # Формируем датафрейм средних и поворачиваем для дальнейшего удобства.
         averages = data_frame(
@@ -106,6 +116,7 @@ class DataAggregationTask:
         self.filename = self._get_filename(filename)
 
     def _get_filename(self, filename):
+        # TODO название функции не соответствует тому, чтобы внутри делаешь
         try:
             os.remove(filename)
         except OSError:
@@ -134,6 +145,9 @@ class DataAggregationTask:
             big_data = pd.concat([city, daily, averages], axis=1)
 
             # Если файл открываем первый раз, то заголовки колонок заполняем.
+# TODO Лучше
+# header_enabled = not self._check_empty_file()
+# big_data.to_csv(file, na_rep="", index=False, header=header_enabled, encoding="utf-8")
             if self._check_empty_file():
                 big_data.to_csv(file, na_rep="", index=False, encoding="utf-8")
             else:
@@ -148,6 +162,7 @@ class DataAnalyzingTask:
         self._comfortables = list()
 
     def _check_filename(self, filename: str) -> str:
+        # TODO не рекомендую использовать переменные в одну букву (f)
         try:
             f = open(filename)
         except IOError:
@@ -182,6 +197,11 @@ class DataAnalyzingTask:
         best_choices = [idx for idx, rating in enumerate(
             ratings_list) if rating == min_ratings]
         self._comfortables = operator.itemgetter(*best_choices)(cities_list)
+
+# TODO максимально похоже на property:
+# @property
+# def comfortables(self) -> list[str]:
+#     return self._comfortables
 
     def get_comfortables(self) -> List[str]:
         return self._comfortables

@@ -13,6 +13,11 @@ class HourModel(BaseModel):
 class DateModel(BaseModel):
     date: str
     hours: List[HourModel]
+# TODO С версии python 3.9 для стандартных коллекций больше не нужен
+# модуль typing:
+# https://docs.python.org/3.9/whatsnew/3.9.html#
+# type-hinting-generics-in-standard-collections.
+# Поправь во всем проекте
 
 
 class ForecastsModel(BaseModel):
