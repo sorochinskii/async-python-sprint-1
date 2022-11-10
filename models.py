@@ -1,5 +1,3 @@
-from typing import List
-
 from pandas import DataFrame
 from pydantic import BaseModel
 
@@ -12,25 +10,16 @@ class HourModel(BaseModel):
 
 class DateModel(BaseModel):
     date: str
-    hours: List[HourModel]
-# TODO С версии python 3.9 для стандартных коллекций больше не нужен
-# модуль typing:
-# https://docs.python.org/3.9/whatsnew/3.9.html#
-# type-hinting-generics-in-standard-collections.
-# Поправь во всем проекте
+    hours: list[HourModel]
 
 
 class ForecastsModel(BaseModel):
-    forecasts: List[DateModel]
+    forecasts: list[DateModel]
 
 
 class ForecastsCityModel(BaseModel):
     city: str
     forecasts: ForecastsModel
-
-
-class ForecastCityListModel(BaseModel):
-    city_forecasts: List[ForecastsCityModel]
 
 
 class CalculationResultModel(BaseModel):

@@ -1,70 +1,45 @@
-import logging
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import Manager, Pool, cpu_count
 
 from tasks import (DataAggregationTask, DataAnalyzingTask, DataCalculationTask,
                    DataFetchingTask)
-from utils import CITIES, FILENAME
+from utils import CITIES, FILENAME, get_logger
 
-logger = logging.getLogger("forecasting")
-# TODO всю настройку логгера было бы неплохо обернуть в функцию
-stream_handler = logging.StreamHandler()
-logger.addHandler(stream_handler)
-stream_formatter = logging.Formatter(
-    '%(asctime)s - %(funcName)s - %(name)s - %(levelname)s - %(message)s')
-stream_handler.setFormatter(stream_formatter)
-logger.setLevel(logging.DEBUG)
+logger = get_logger()
 
 
 def forecast_weather():
     cities = CITIES.keys()
     workers = len(cities)
-    logger.debug(f"Всего городов и потоковых воркеров {workers}")
-    # не пиши логи с кириллицей. Такие логи не каждый сервер отобразит +
-    # русский текст примерно на 15% длиннее английского. А в масшатабах логов
-    # это серьезный перерасход дискового пространства
+    logger.debug(f"Thread workers count {workers}")
     with ThreadPoolExecutor(max_workers=workers) as executor:
         futures = executor.map(DataFetchingTask.fetch, cities)
         data = list(futures)
 
     workers_cpu = cpu_count() - 1
-    logger.debug(f"Количество воркеров для пула == {workers_cpu}")
-    # параметры более эффективно задавать по-другому, чтобы строка собиралась
-    # только при совпадении уровня логгирования логгера с уровнем логируемого
-    # сообщения. Подробнее:
-    # https://docs.python.org/3/howto/logging.html#logging-variable-data
+    logger.debug("Pool workers count %s", workers_cpu)
     manager = Manager()
     queue = manager.Queue()
-    calculation = DataCalculationTask(queue)
+    calculation = DataCalculationTask(queue=queue)
     aggregation = DataAggregationTask(queue=queue, filename=FILENAME)
 
     with Pool(processes=workers_cpu) as pool:
-        pool.map(calculation.run, data)
-        while not queue.empty():
-            pool.apply(aggregation.run)
-            # TODO сейчас ты фактически бесполезно используешь очередь, так как
-            # накидываешь в нее сообщения, а разгребаешь только после того,
-            # как все таски с вычислением завершатся (с таким же успехом мог
-            # складывать все в список). Рекомендую тебе здесь переписать на
-            # map_async. Тогда ты сможешь асинхронно проводить вычисление и
-            # сразу же из очереди подхватывать их (то есть этот while надо
-            # перенести в DataAggregationTask.run). А сигналом для завершения
-            # цикла в DataAggregationTask будет, например, None в очереди.
-            # Примерно так:
-            # with Pool(processes=workers_cpu) as pool:
-            #     tasks = pool.map_async(calculation.run, data)
-            #     aggregation_task = apply_async(aggregation.run)
-            #     # wait for tasks to complete
-            #     tasks.wait()
-            #     queue.put(None)
-            #     aggregation_task.wait()
-        pool.close()
-        pool.join()
+        tasks_timeout = len(cities)
+        calculation_tasks = pool.map_async(calculation.run, data)
+        aggregation_task = pool.apply_async(aggregation.run)
+        calculation_tasks.wait(timeout=tasks_timeout)
+        if not calculation_tasks.ready():
+            logger.error(
+                "Tasks calculation doesnt completed after "
+                "timeout=%s seconds", tasks_timeout)
+            raise TimeoutError
+        queue.put(None)
+        aggregation_task.wait()
 
     analyze = DataAnalyzingTask(filename=FILENAME)
     analyze.run()
-    print(analyze.get_comfortables())
-    # TODO давай везде использовать logger
+    most_comfortables = analyze.comfortables
+    logger.info("Best place to visit is %s", most_comfortables)
 
 
 if __name__ == "__main__":

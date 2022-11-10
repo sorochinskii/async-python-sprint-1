@@ -9,11 +9,6 @@ from csv_diff import compare, load_csv
 from pydantic import parse_obj_as
 
 from models import CalculationResultModel, ForecastsCityModel, ForecastsModel
-# TODO тут перемешались импорты. Стандартный подход такой: импорты должны быть
-# отсортированы по алфавиту и разделены на три группы новой строкой. Группы
-# такие: встроенные модули, установленные пакеты, модули проекта. Чтобы проще
-# с этим жить предлагаю тебе использовать isort
-# (https://pycqa.github.io/isort/)
 from tasks import DataAggregationTask, DataCalculationTask, DataFetchingTask
 
 CITIES = ["MOSCOW", "CAIRO", "NOVOSIBIRSK", "BUCHAREST"]
@@ -24,7 +19,6 @@ class TestForecasts:
 
     @pytest.fixture(scope="class")
     def fixtured_city(self):
-
         city = pd.read_csv(f"{self.path}city_moscow.csv")
         daily_averages = pd.read_csv(
             f"{self.path}daily_averages_moscow.csv", index_col=0)
@@ -54,13 +48,12 @@ class TestForecasts:
         return result
 
     def test_fetch(self, data_from_test_file):
-        # TODO Ко всем тестам совет: по структуре тестов рекомендую придерживаться AAA,
-        # то есть отбивать новой строкой три фазы теста, если его тело больше трех
-        # строк, а фазы такие: подготовка, вызов тестируемой функции, asserts
         data = data_from_test_file
         get_data = DataFetchingTask()
+
         with ThreadPoolExecutor() as executor:
             fetched = list(executor.map(get_data.fetch, CITIES))
+
         assert data == fetched
 
     def test_calc(self, fixtured_city):
@@ -68,7 +61,9 @@ class TestForecasts:
         calculator = DataCalculationTask()
         city = "MOSCOW"
         fetched = DataFetchingTask().fetch(city)
+
         calculated = calculator.run(fetched)
+
         assert pd.testing.assert_frame_equal(
             calculated.city, fixtured_data.city) is None
         assert pd.testing.assert_frame_equal(
@@ -89,8 +84,10 @@ class TestForecasts:
             fetched = DataFetchingTask().fetch(city)
             calculates = calculation_task.run(data=fetched)
             aggregator.run(source=calculates)
+
         diff = compare(
             load_csv(open(testing_file, "r"), key="Город/Дата"),
             load_csv(open(file_to_test, "r"), key="Город/Дата"))
+
         assert diff == {'added': [], 'removed': [], 'changed': [],
                         'columns_added': [], 'columns_removed': []}

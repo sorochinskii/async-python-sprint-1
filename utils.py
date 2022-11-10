@@ -1,3 +1,5 @@
+import logging
+
 CITIES = {
     "MOSCOW": "https://code.s3.yandex.net/async-module/moscow-response.json",
     "PARIS": "https://code.s3.yandex.net/async-module/paris-response.json",
@@ -38,3 +40,14 @@ def check_python_version():
                 MIN_MAJOR_PYTHON_VER, MIN_MINOR_PYTHON_VER
             )
         )
+
+
+def get_logger():
+    logger = logging.getLogger("forecasting")
+    stream_handler = logging.StreamHandler()
+    logger.addHandler(stream_handler)
+    stream_formatter = logging.Formatter(
+        '%(asctime)s - %(funcName)s - %(name)s - %(levelname)s - %(message)s')
+    stream_handler.setFormatter(stream_formatter)
+    logger.setLevel(logging.DEBUG)
+    return logger
