@@ -11,7 +11,7 @@ logger = get_logger()
 def forecast_weather():
     cities = CITIES.keys()
     workers = len(cities)
-    logger.debug(f"Thread workers count {workers}")
+    logger.debug("Thread workers count %s", workers)
     with ThreadPoolExecutor(max_workers=workers) as executor:
         futures = executor.map(DataFetchingTask.fetch, cities)
         data = list(futures)
